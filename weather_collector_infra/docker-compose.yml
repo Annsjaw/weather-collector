@@ -12,6 +12,7 @@ services:
 
   weather_app:
     build: ../
+    command: sh -c "alembic upgrade head && python src/main.py"
     depends_on:
       - db
     env_file:

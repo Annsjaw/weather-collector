@@ -3,6 +3,3 @@ WORKDIR /weather_collector_app
 COPY requirements.txt .
 RUN pip install -r requirements.txt --no-cache-dir
 COPY . .
-RUN alembic upgrade head
-
-CMD python src/main.py

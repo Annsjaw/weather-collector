@@ -2,25 +2,20 @@ version: '3.3'
 
 services:
   db:
-    container_name: pg_wc_db
     image: postgres:13.3
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
       - "5432:5432"
+    env_file:
+      - .env
 
-  pgadmin:
-    container_name: pgadmin_for_wc
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@email.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
+  weather_app:
+    build: ../
+    depends_on:
+      - db
+    env_file:
+      - .env
 
 volumes:
   postgres_data:

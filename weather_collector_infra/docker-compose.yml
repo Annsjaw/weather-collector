@@ -8,14 +8,14 @@ services:
     ports:
       - "5432:5432"
     env_file:
-      - .env
+      - .deploy_env
 
   weather_app:
     build: ../
     depends_on:
       - db
     env_file:
-      - .env
+      - .deploy_env
 
 volumes:
   postgres_data:

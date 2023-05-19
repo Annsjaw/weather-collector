@@ -3,3 +3,5 @@ venv
 README.md
 LICENSE
 .env
+.git
+.idea

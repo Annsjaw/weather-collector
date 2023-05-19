@@ -12,7 +12,8 @@ services:
 
   weather_app:
     build: ../
-    command: sh -c "alembic upgrade head && python src/main.py"
+    command: sh -c "sleep 10 && alembic upgrade head && python src/main.py"
+    restart: always
     depends_on:
       - db
     env_file:

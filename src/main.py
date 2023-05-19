@@ -1,14 +1,16 @@
 import json
-import sys
-from http import HTTPStatus
-import time
 import logging
+import sys
+import time
+from http import HTTPStatus
+
 import requests
+
+import database
+import exception
+from config import API_KEY, ENDPOINT, RETRY_TIME, cities
 from operations.models import weather
 from operations.schemas import WeatherData
-import database
-from config import API_KEY, ENDPOINT, cities, RETRY_TIME
-import exception
 
 logger = logging.getLogger()
 
@@ -95,7 +97,6 @@ if __name__ == '__main__':
     while True:
         try:
             main()
-            # Задержка в 1 час
             logger.info('Ушел в ожидание на 60 минут')
             time.sleep(RETRY_TIME)
 

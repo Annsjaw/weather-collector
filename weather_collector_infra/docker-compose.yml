@@ -1,4 +1,4 @@
-version: '3.3'
+version: '3.9'
 
 services:
   db:
@@ -8,16 +8,29 @@ services:
     ports:
       - "5432:5432"
     env_file:
-      - .deploy_env
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 4G
 
   weather_app:
     build: ../
-    command: sh -c "sleep 10 && alembic upgrade head && python src/main.py"
-    restart: always
+    command: sh -c "alembic upgrade head && python src/main.py"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     env_file:
-      - .deploy_env
+      - .env
+
 
 volumes:
   postgres_data:

@@ -20,7 +20,7 @@ git clon git@github.com:Annsjaw/weather-collector.git
 ```
 cd weather_collector_infra
 ```
-Заполните файл .deploy_env своими секретами (или воспользуйтесь моими)
+Заполните файл .env своими секретами (или воспользуйтесь моими)
 ```
 # Секретный ключ для доступа к сервису openweathermap (получит можно в личном кабинете)
 API_KEY = a2857b9b09c3fd61976e5a31c24fe180

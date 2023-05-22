@@ -1,18 +1,19 @@
 # weather-collector
-# Сбощик погоды
+# Сборщик погоды
 
 Приложение для сборки данных о погоде из 50 крупнейших городов мира.
-Данное приложение собирает погоду из открытого API openweathermap.
+Данное приложение собирает погоду из открытого API [openweathermap].
 
 Технологии:
-- python 3.10
-- sqlalchemy
-- alembic
-- pydantic
+- [Python 3.10]
+- [SQLAlchemy]
+- [alembic]
+- [pydantic]
+- [requests]
 
-C помощью библиотеки requests и api_key полученного у openweathermap.org происходит сбор данных по 50 городам указанных в переменной cities. данные проходят валидацию через pydantic и отправляются в базу данных postgresql через ORM SQLAlchemy. SQLAlchemy используется в связке с  alembiс для удобства отслеживания и создания миграци при расширении или изменении проекта.
+C помощью библиотеки requests и api_key полученного у [openweathermap] происходит сбор данных по 50 городам указанных в переменной cities. данные проходят валидацию через pydantic и отправляются в базу данных postgresql через ORM SQLAlchemy. SQLAlchemy используется в связке с  alembiс для удобства отслеживания и создания миграци при расширении или изменении проекта.
 
-Для запуска проекта склонируйте репозиторий
+Для запуска проекта клонируйте репозиторий
 ```
 git clon git@github.com:Annsjaw/weather-collector.git
 ```
@@ -43,3 +44,13 @@ docker-compose up -d --build
 ```
 
 После развертывания проекта приложение сразу начнет работать и будет собирать информацию о погоде каждые 60 минут.
+
+
+[//]: #
+
+   [SQLAlchemy]: <https://pypi.org/project/SQLAlchemy/>
+   [alembic]: <https://pypi.org/project/alembic/>
+   [pydantic]: <https://pypi.org/project/pydantic/>
+   [requests]: <https://pypi.org/project/requests/>
+   [Python 3.10]: <https://www.python.org/downloads/release/python-3100/>
+   [openweathermap]: <https://openweathermap.org>

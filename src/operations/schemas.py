@@ -1,11 +1,27 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
-class WeatherData(BaseModel):
+class Wind(BaseModel):
     """
-    Валидация типов данных поля WeatherData
+    Валидация данных о ветре
     """
-    city: str
-    temperature: float
+    speed: float
+
+
+class BasicParameters(BaseModel):
+    """
+    Валидация базовых погодных данных
+    """
+
+    temperature: float = Field(alias='temp')
     humidity: float
-    wind_speed: float
+
+
+class CityWeather(BaseModel):
+    """
+    Валидация типов данных поля City
+    """
+
+    name: str
+    basic_parameters: BasicParameters = Field(alias='main')
+    wind: Wind

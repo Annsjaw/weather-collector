@@ -10,40 +10,26 @@ import database
 import exception
 from config import API_KEY, ENDPOINT, RETRY_TIME, cities
 from operations.models import weather
-from operations.schemas import WeatherData
+from operations.schemas import CityWeather
+from pydantic import ValidationError
 
 logger = logging.getLogger()
 
 
-def insert_to_db(weather_data: WeatherData) -> None:
+def insert_to_db(city_weather: CityWeather) -> None:
     """
     Запись в базу данных валидированных данных.
     """
 
     values = {
-        'city': weather_data.city,
-        'temperature': weather_data.temperature,
-        'humidity': weather_data.humidity,
-        'wind_speed': weather_data.wind_speed
+        'city': city_weather.name,
+        'temperature': city_weather.basic_parameters.temperature,
+        'humidity': city_weather.basic_parameters.humidity,
+        'wind_speed': city_weather.wind.speed
     }
     insert_stmt = weather.insert().values(**values)
     database.session.execute(insert_stmt)
     logger.info(f'Записал в БД {values}')
-
-
-def validate_data(city: str, data: json) -> WeatherData:
-    """
-    Валидация данных с помощью pydantic
-    """
-
-    weather_data = WeatherData(
-        city=city,
-        temperature=data['main']['temp'],
-        humidity=data['main']['humidity'],
-        wind_speed=data['wind']['speed'],
-    )
-    logger.info(f'Прошел валидацию {city}')
-    return weather_data
 
 
 def get_api_answer(city: str) -> json:
@@ -61,6 +47,7 @@ def get_api_answer(city: str) -> json:
         raise Exception(f'Ошибка получения ответа от эндпоинта {error}')
 
     if api_status == HTTPStatus.OK:
+        logger.info(f'Забрал данные о {city}')
         return api_response.json()
     elif api_status == HTTPStatus.UNAUTHORIZED:
         message = api_response.json()
@@ -77,10 +64,15 @@ def main():
     """
 
     for city in cities:
-        data = get_api_answer(city)
-        logger.info(f'Забрал данные о {city}')
-        weather_data = validate_data(city, data)
-        insert_to_db(weather_data)
+        api_response = get_api_answer(city)
+        try:
+            city_weather = CityWeather(**api_response)
+
+        except ValidationError as e:
+            logger.error(e.json())
+
+        else:
+            insert_to_db(city_weather)
     database.session.commit()
 
 

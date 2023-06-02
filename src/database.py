@@ -10,4 +10,3 @@ metadata = MetaData()
 
 engine = create_engine(DB_URL)
 Session = sessionmaker(bind=engine)
-session = Session()

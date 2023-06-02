@@ -15,56 +15,12 @@ API_KEY = os.environ.get('API_KEY')
 ENDPOINT = 'https://api.openweathermap.org/data/2.5/weather/'
 RETRY_TIME = 3600
 
-cities = [
-    'Tokyo',
-    'Delhi',
-    'Shanghai',
-    'Sao Paulo',
-    'Mumbai',
-    'Beijing',
-    'Cairo',
-    'Dhaka',
-    'Mexico City',
-    'Osaka',
-    'Karachi',
-    'Chongqing',
-    'Istanbul',
-    'Buenos Aires',
-    'Kolkata',
-    'Lagos',
-    'Kinshasa',
-    'Manila',
-    'Rio de Janeiro',
-    'Guangzhou',
-    'Lahore',
-    'Shenzhen',
-    'Bangalore',
-    'Moscow',
-    'Tianjin',
-    'Jakarta',
-    'London',
-    'Lima',
-    'Bangkok',
-    'New York',
-    'Chennai',
-    'Bogota',
-    'Ho Chi Minh',
-    'Hyderabad',
-    'Lima',
-    'Hong Kong',
-    'Hangzhou',
-    'Rio de Janeiro',
-    'Ahmedabad',
-    'Kuala Lumpur',
-    'Paris',
-    'Shijiazhuang',
-    'Changsha',
-    'Bengaluru',
-    'Chicago',
-    'Chengdu',
-    'Wuhan',
-    'Nanjing',
-    'Taipei',
-    'Los Angeles',
-    'Miami'
-]
+CITIES_FILE = BASE_DIR / 'data/cities.txt'
+
+# class Settings(BaseSettings):
+#     db_host: str
+#     db_port: str
+#     db_name: str
+#     db_user: str
+#     db_pass: str
+#     api_key: str

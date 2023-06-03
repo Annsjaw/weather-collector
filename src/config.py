@@ -15,7 +15,9 @@ API_KEY = os.environ.get('API_KEY')
 ENDPOINT = 'https://api.openweathermap.org/data/2.5/weather/'
 RETRY_TIME = 3600
 
-CITIES_FILE = BASE_DIR / 'data/cities.txt'
+BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
+
+CITIES_FILE = BASE_DIR / 'data/cities_test.txt'  # FIXME
 
 # class Settings(BaseSettings):
 #     db_host: str

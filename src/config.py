@@ -22,6 +22,4 @@ settings = Settings()
 ENDPOINT = 'https://api.openweathermap.org/data/2.5/weather/'
 RETRY_TIME = 3600
 
-BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
-
-CITIES_FILE = BASE_DIR / 'data/cities_test.txt'  # FIXME
+CITIES_FILE = BASE_DIR / 'data/cities.txt'

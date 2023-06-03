@@ -1,5 +1,4 @@
 import json
-
 from dataclasses import dataclass
 from http import HTTPStatus
 
@@ -10,9 +9,9 @@ from pydantic import ValidationError
 import exception
 from config import CITIES_FILE, ENDPOINT, RETRY_TIME, settings
 from database import Session
+from logger import logger
 from operations.models import weather
 from operations.schemas import CityWeather
-from logger import logger
 
 
 @dataclass

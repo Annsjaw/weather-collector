@@ -1,16 +1,22 @@
-import os
+from pydantic import BaseSettings
+from pathlib import Path
 
-from dotenv import load_dotenv
+BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 
-load_dotenv()
 
-DB_HOST = os.environ.get('DB_HOST')
-DB_PORT = os.environ.get('DB_PORT')
-DB_NAME = os.environ.get('DB_NAME')
-DB_USER = os.environ.get('DB_USER')
-DB_PASS = os.environ.get('DB_PASS')
+class Settings(BaseSettings):
+    DB_HOST: str
+    DB_PORT: int
+    DB_NAME: str
+    DB_USER: str
+    DB_PASS: str
+    API_KEY: str
 
-API_KEY = os.environ.get('API_KEY')
+    class Config:
+        env_file = BASE_DIR / '.env'
+
+
+settings = Settings()
 
 ENDPOINT = 'https://api.openweathermap.org/data/2.5/weather/'
 RETRY_TIME = 3600
@@ -18,11 +24,3 @@ RETRY_TIME = 3600
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 
 CITIES_FILE = BASE_DIR / 'data/cities_test.txt'  # FIXME
-
-# class Settings(BaseSettings):
-#     db_host: str
-#     db_port: str
-#     db_name: str
-#     db_user: str
-#     db_pass: str
-#     api_key: str

@@ -8,7 +8,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from pydantic import ValidationError
 
 import exception
-from config import API_KEY, CITIES_FILE, ENDPOINT, RETRY_TIME
+from config import CITIES_FILE, ENDPOINT, RETRY_TIME, settings
 from database import Session
 from operations.models import weather
 from operations.schemas import CityWeather
@@ -37,7 +37,7 @@ class WeatherData:
 class WeatherApi:
     def __init__(self, city: str):
         self.city = city
-        self.url = f'{ENDPOINT}?q={city}&appid={API_KEY}'
+        self.url = f'{ENDPOINT}?q={city}&appid={settings.API_KEY}'
         self.api_response = self.get_api_response()
 
     def get_api_response(self) -> json:

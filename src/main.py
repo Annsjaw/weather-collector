@@ -1,6 +1,5 @@
 import json
-import logging
-import sys
+
 from dataclasses import dataclass
 from http import HTTPStatus
 
@@ -13,8 +12,7 @@ from config import API_KEY, CITIES_FILE, ENDPOINT, RETRY_TIME
 from database import Session
 from operations.models import weather
 from operations.schemas import CityWeather
-
-logger = logging.getLogger()
+from logger import logger
 
 
 @dataclass
@@ -76,7 +74,7 @@ class WeatherCollector:
         self.insert_to_db()
 
     @staticmethod
-    def get_cities():
+    def get_cities() -> list:
         with CITIES_FILE.open() as file:
             return [city.strip() for city in file.readlines()]
 
@@ -106,15 +104,6 @@ def main():
 
 
 if __name__ == '__main__':
-    logger.setLevel(logging.DEBUG)
-    stream_handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter(
-        '%(asctime)s - [%(levelname)s] - %(message)s - %(funcName)s - '
-        'строка %(lineno)d'
-    )
-    stream_handler.setFormatter(formatter)
-    logger.addHandler(stream_handler)
-
     scheduler = BlockingScheduler()
     scheduler.add_job(func=main, trigger='interval', seconds=RETRY_TIME)
     try:

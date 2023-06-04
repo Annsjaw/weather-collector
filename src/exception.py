@@ -1,4 +1,4 @@
-class EndpointErrore(Exception):
+class EndpointError(Exception):
     """Проблема в эндпоинте"""
     pass
 

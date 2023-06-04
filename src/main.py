@@ -1,97 +1,147 @@
-import json
-import logging
-import sys
-import time
+import datetime
 from http import HTTPStatus
 
 import requests
-
-import database
-import exception
-from config import API_KEY, ENDPOINT, RETRY_TIME, cities
-from operations.models import weather
-from operations.schemas import CityWeather
+from apscheduler.schedulers.blocking import BlockingScheduler
 from pydantic import ValidationError
 
-logger = logging.getLogger()
+import exception
+from config import CITIES_FILE, ENDPOINT, RETRY_TIME, settings
+from database import Session
+from logger import logger
+from operations.models import Weather
+from operations.schemas import CityWeather
 
 
-def insert_to_db(city_weather: CityWeather) -> None:
+class CityData:
     """
-    Запись в базу данных валидированных данных.
-    """
-
-    values = {
-        'city': city_weather.name,
-        'temperature': city_weather.basic_parameters.temperature,
-        'humidity': city_weather.basic_parameters.humidity,
-        'wind_speed': city_weather.wind.speed
-    }
-    insert_stmt = weather.insert().values(**values)
-    database.session.execute(insert_stmt)
-    logger.info(f'Записал в БД {values}')
-
-
-def get_api_answer(city: str) -> json:
-    """
-    Проверяем ответ от запроса на эндпоинт.
+    Получение данных о погоде переданного города.
+    После успешного запроса к эндпоинту, полученные данные проходят валидацию
+    и возвращаются если все прошло успешно.
     """
 
-    try:
-        url = f'{ENDPOINT}?q={city}&appid={API_KEY}'
-        logger.info(f'Обращаюсь к эндпоинту {url}')
+    def __init__(self, city: str):
+        self.city = city
 
-        api_response = requests.get(url)
-        api_status = api_response.status_code
-    except Exception as error:
-        raise Exception(f'Ошибка получения ответа от эндпоинта {error}')
+    def get_api_response(self) -> dict:
+        """
+        Получение ответа с данными о погоде от эндпоинта.
+        """
+        url = self._get_url()
 
-    if api_status == HTTPStatus.OK:
-        logger.info(f'Забрал данные о {city}')
-        return api_response.json()
-    elif api_status == HTTPStatus.UNAUTHORIZED:
-        message = api_response.json()
-        raise exception.UNAUTHORIZED(message)
-    else:
-        message = api_response.json()
-        raise exception.EndpointErrore(message)
+        try:
+            logger.info(f'Обращаюсь к эндпоинту {url}')
+            api_response = requests.get(url)
+        except Exception as error:
+            raise Exception(f'Ошибка получения ответа от эндпоинта {error}')
+
+        if api_response.status_code == HTTPStatus.OK:
+            logger.info(f'Забрал данные о городе {self.city}')
+            return api_response.json()
+        elif api_response.status_code == HTTPStatus.UNAUTHORIZED:
+            message = api_response.json()
+            raise exception.UNAUTHORIZED(message)
+        else:
+            message = api_response.json()
+            raise exception.EndpointError(message)
+
+    def _get_url(self) -> str:
+        """
+        Формирование эндпоинта.
+        """
+        return f'{ENDPOINT}?q={self.city}&appid={settings.API_KEY}'
+
+    def get_data(self) -> CityWeather:
+        """
+        Запускающий метод, получает данные от эндпоинта и возвращает
+        валидные данные.
+        """
+        response = self.get_api_response()
+        validate_data = self.validate(response)
+        logger.info('Данные прошли валидацию')
+        return validate_data
+
+    @staticmethod
+    def validate(api_response) -> CityWeather:
+        """
+        Валидация данных с помощью pydantic
+        """
+        try:
+            logger.info('Отправил данные на валидацию')
+            return CityWeather(**api_response)
+        except ValidationError as error:
+            logger.error(f"Ошибка валидации данных: {error.json()}")
+            raise error
+
+
+class Collector:
+    """
+    Сборщик данных о погоде в городе.
+    """
+
+    def __init__(self):
+        self.weather_objects = []
+
+    def collect_weather_data(self) -> None:
+        """
+        Получение данных о погоде, добавление в один список
+        и запись списка данных в БД
+        """
+        for city in self.get_cities():
+            citydata = CityData(city)
+            data = self.reformat_data(citydata.get_data())
+            self.weather_objects.append(Weather(**data))
+            logger.info(f'Добавил данные о городе {city} в список')
+        self.insert_to_db()
+
+    @staticmethod
+    def get_cities() -> list:
+        """
+        Получение списка городов из файла.
+        """
+        with CITIES_FILE.open() as file:
+            return [city.strip() for city in file.readlines()]
+
+    def insert_to_db(self) -> None:
+        """
+        Запись данных о погоде в городах в базу данных.
+        """
+        with Session() as session:
+            logger.info('Открыл сессию для работы с БД')
+            session.bulk_save_objects(self.weather_objects)
+            logger.info('Удачно записал данные о '
+                        f'{len(self.weather_objects)} городах в базу')
+            session.commit()
+
+    @staticmethod
+    def reformat_data(validate_data: CityWeather) -> dict:
+        """
+        Преобразование валидных данных в удобный для записи в БД формат.
+        """
+        data = {
+            'city': validate_data.name,
+            'temperature': validate_data.basic_parameters.temperature,
+            'humidity': validate_data.basic_parameters.humidity,
+            'wind_speed': validate_data.wind.speed
+        }
+        logger.info('Преобразовал данные для вставки в БД')
+        return data
 
 
 def main():
-    """
-    Сбор данных о температуре, влажности и скорости ветра в городах из
-    списка cities. Валидация и загрузка в базу данных.
-    """
-
-    for city in cities:
-        api_response = get_api_answer(city)
-        try:
-            city_weather = CityWeather(**api_response)
-
-        except ValidationError as e:
-            logger.error(e.json())
-
-        else:
-            insert_to_db(city_weather)
-    database.session.commit()
+    collector = Collector()
+    collector.collect_weather_data()
 
 
 if __name__ == '__main__':
-    logger.setLevel(logging.DEBUG)
-    stream_handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter(
-        '%(asctime)s - [%(levelname)s] - %(message)s - %(funcName)s - '
-        'строка %(lineno)d'
-    )
-    stream_handler.setFormatter(formatter)
-    logger.addHandler(stream_handler)
-
-    while True:
-        try:
-            main()
-            logger.info('Ушел в ожидание на 60 минут')
-            time.sleep(RETRY_TIME)
-
-        except KeyboardInterrupt:
-            logger.info('Ой, работа прервана')
-            exit()
+    scheduler = BlockingScheduler()
+    scheduler.add_job(func=main,
+                      trigger='interval',
+                      seconds=RETRY_TIME,
+                      next_run_time=datetime.datetime.now()
+                      )
+    try:
+        scheduler.start()
+    except KeyboardInterrupt:
+        logger.info('Ой, работа прервана')
+        exit()

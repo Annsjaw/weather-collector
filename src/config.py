@@ -1,70 +1,25 @@
-import os
+from pathlib import Path
 
-from dotenv import load_dotenv
+from pydantic import BaseSettings
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 
-DB_HOST = os.environ.get('DB_HOST')
-DB_PORT = os.environ.get('DB_PORT')
-DB_NAME = os.environ.get('DB_NAME')
-DB_USER = os.environ.get('DB_USER')
-DB_PASS = os.environ.get('DB_PASS')
 
-API_KEY = os.environ.get('API_KEY')
+class Settings(BaseSettings):
+    DB_HOST: str
+    DB_PORT: int
+    DB_NAME: str
+    DB_USER: str
+    DB_PASS: str
+    API_KEY: str
+
+    class Config:
+        env_file = BASE_DIR / '.env'
+
+
+settings = Settings()
 
 ENDPOINT = 'https://api.openweathermap.org/data/2.5/weather/'
 RETRY_TIME = 3600
 
-cities = [
-    'Tokyo',
-    'Delhi',
-    'Shanghai',
-    'Sao Paulo',
-    'Mumbai',
-    'Beijing',
-    'Cairo',
-    'Dhaka',
-    'Mexico City',
-    'Osaka',
-    'Karachi',
-    'Chongqing',
-    'Istanbul',
-    'Buenos Aires',
-    'Kolkata',
-    'Lagos',
-    'Kinshasa',
-    'Manila',
-    'Rio de Janeiro',
-    'Guangzhou',
-    'Lahore',
-    'Shenzhen',
-    'Bangalore',
-    'Moscow',
-    'Tianjin',
-    'Jakarta',
-    'London',
-    'Lima',
-    'Bangkok',
-    'New York',
-    'Chennai',
-    'Bogota',
-    'Ho Chi Minh',
-    'Hyderabad',
-    'Lima',
-    'Hong Kong',
-    'Hangzhou',
-    'Rio de Janeiro',
-    'Ahmedabad',
-    'Kuala Lumpur',
-    'Paris',
-    'Shijiazhuang',
-    'Changsha',
-    'Bengaluru',
-    'Chicago',
-    'Chengdu',
-    'Wuhan',
-    'Nanjing',
-    'Taipei',
-    'Los Angeles',
-    'Miami'
-]
+CITIES_FILE = BASE_DIR / 'data/cities.txt'

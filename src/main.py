@@ -1,5 +1,5 @@
+import datetime
 import json
-from dataclasses import dataclass
 from http import HTTPStatus
 
 import requests
@@ -14,9 +14,7 @@ from operations.models import weather
 from operations.schemas import CityWeather
 
 
-@dataclass
 class WeatherData:
-    validate_data: CityWeather
 
     def __init__(self, api_response: json):
         self.validate(api_response)
@@ -34,6 +32,7 @@ class WeatherData:
 
 
 class WeatherApi:
+
     def __init__(self, city: str):
         self.city = city
         self.url = f'{ENDPOINT}?q={city}&appid={settings.API_KEY}'
@@ -57,13 +56,10 @@ class WeatherApi:
             raise exception.EndpointError(message)
 
 
-@dataclass
 class WeatherCollector:
-    weather_data_list: list
 
     def __init__(self):
         self.weather_data_list = []
-        self.collect_weather_data()
 
     def collect_weather_data(self) -> None:
         for city in self.get_cities():
@@ -78,14 +74,13 @@ class WeatherCollector:
             return [city.strip() for city in file.readlines()]
 
     def insert_to_db(self) -> None:
-        session = Session()
-        logger.info('Открыл сессию для работы с БД')
-        for data in self.weather_data_list:
-            session.execute(weather.insert().values(**data))
-        logger.info(f'Удачно записал данные о {len(self.weather_data_list)} '
-                    'городах в базу')
-        session.commit()
-        session.close()
+        with Session() as session:
+            logger.info('Открыл сессию для работы с БД')
+            for data in self.weather_data_list:
+                session.execute(weather.insert().values(**data))
+            logger.info('Удачно записал данные о '
+                        f'{len(self.weather_data_list)} городах в базу')
+            session.commit()
 
     def get_weather_data(self, weather_data: WeatherData) -> None:
         data = {
@@ -99,14 +94,18 @@ class WeatherCollector:
 
 
 def main():
-    WeatherCollector()
+    collector = WeatherCollector()
+    collector.collect_weather_data()
 
 
 if __name__ == '__main__':
     scheduler = BlockingScheduler()
-    scheduler.add_job(func=main, trigger='interval', seconds=RETRY_TIME)
+    scheduler.add_job(func=main,
+                      trigger='interval',
+                      seconds=RETRY_TIME,
+                      next_run_time=datetime.datetime.now()
+                      )
     try:
-        main()
         scheduler.start()
     except KeyboardInterrupt:
         logger.info('Ой, работа прервана')

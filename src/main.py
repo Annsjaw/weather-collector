@@ -14,11 +14,19 @@ from operations.schemas import CityWeather
 
 
 class CityData:
+    """
+    Получение данных о погоде переданного города.
+    После успешного запроса к эндпоинту, полученные данные проходят валидацию
+    и возвращаются если все прошло успешно.
+    """
 
     def __init__(self, city: str):
         self.city = city
 
     def get_api_response(self) -> dict:
+        """
+        Получение ответа с данными о погоде от эндпоинта.
+        """
         url = self._get_url()
 
         try:
@@ -38,9 +46,16 @@ class CityData:
             raise exception.EndpointError(message)
 
     def _get_url(self) -> str:
+        """
+        Формирование эндпоинта.
+        """
         return f'{ENDPOINT}?q={self.city}&appid={settings.API_KEY}'
 
     def get_data(self) -> CityWeather:
+        """
+        Запускающий метод, получает данные от эндпоинта и возвращает
+        валидные данные.
+        """
         response = self.get_api_response()
         validate_data = self.validate(response)
         logger.info('Данные прошли валидацию')
@@ -48,6 +63,9 @@ class CityData:
 
     @staticmethod
     def validate(api_response) -> CityWeather:
+        """
+        Валидация данных с помощью pydantic
+        """
         try:
             logger.info('Отправил данные на валидацию')
             return CityWeather(**api_response)
@@ -57,11 +75,18 @@ class CityData:
 
 
 class Collector:
+    """
+    Сборщик данных о погоде в городе.
+    """
 
     def __init__(self):
         self.weather_objects = []
 
     def collect_weather_data(self) -> None:
+        """
+        Получение данных о погоде, добавление в один список
+        и запись списка данных в БД
+        """
         for city in self.get_cities():
             citydata = CityData(city)
             data = self.reformat_data(citydata.get_data())
@@ -71,10 +96,16 @@ class Collector:
 
     @staticmethod
     def get_cities() -> list:
+        """
+        Получение списка городов из файла.
+        """
         with CITIES_FILE.open() as file:
             return [city.strip() for city in file.readlines()]
 
     def insert_to_db(self) -> None:
+        """
+        Запись данных о погоде в городах в базу данных.
+        """
         with Session() as session:
             logger.info('Открыл сессию для работы с БД')
             session.bulk_save_objects(self.weather_objects)
@@ -84,6 +115,9 @@ class Collector:
 
     @staticmethod
     def reformat_data(validate_data: CityWeather) -> dict:
+        """
+        Преобразование валидных данных в удобный для записи в БД формат.
+        """
         data = {
             'city': validate_data.name,
             'temperature': validate_data.basic_parameters.temperature,

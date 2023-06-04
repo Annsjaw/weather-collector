@@ -1,5 +1,4 @@
 import datetime
-import json
 from http import HTTPStatus
 
 import requests
@@ -10,7 +9,7 @@ import exception
 from config import CITIES_FILE, ENDPOINT, RETRY_TIME, settings
 from database import Session
 from logger import logger
-from operations.models import weather
+from operations.models import Weather
 from operations.schemas import CityWeather
 
 
@@ -60,13 +59,13 @@ class CityData:
 class Collector:
 
     def __init__(self):
-        self.weather_data_list = []
+        self.weather_objects = []
 
     def collect_weather_data(self) -> None:
         for city in self.get_cities():
             citydata = CityData(city)
-            self.weather_data_list.append(
-                self.reformat_data(citydata.get_data()))
+            data = self.reformat_data(citydata.get_data())
+            self.weather_objects.append(Weather(**data))
             logger.info(f'Добавил данные о городе {city} в список')
         self.insert_to_db()
 
@@ -78,10 +77,9 @@ class Collector:
     def insert_to_db(self) -> None:
         with Session() as session:
             logger.info('Открыл сессию для работы с БД')
-            for data in self.weather_data_list:
-                session.execute(weather.insert().values(**data))
+            session.bulk_save_objects(self.weather_objects)
             logger.info('Удачно записал данные о '
-                        f'{len(self.weather_data_list)} городах в базу')
+                        f'{len(self.weather_objects)} городах в базу')
             session.commit()
 
     @staticmethod

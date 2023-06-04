@@ -18,12 +18,13 @@ class CityData:
 
     def __init__(self, city: str):
         self.city = city
-        self.url = f'{ENDPOINT}?q={self.city}&appid={settings.API_KEY}'
 
-    def get_api_response(self) -> json:
+    def get_api_response(self) -> dict:
+        url = self._get_url()
+
         try:
-            logger.info(f'Обращаюсь к эндпоинту {self.url}')
-            api_response = requests.get(self.url)
+            logger.info(f'Обращаюсь к эндпоинту {url}')
+            api_response = requests.get(url)
         except Exception as error:
             raise Exception(f'Ошибка получения ответа от эндпоинта {error}')
 
@@ -37,14 +38,17 @@ class CityData:
             message = api_response.json()
             raise exception.EndpointError(message)
 
-    def get_data(self):
+    def _get_url(self) -> str:
+        return f'{ENDPOINT}?q={self.city}&appid={settings.API_KEY}'
+
+    def get_data(self) -> CityWeather:
         response = self.get_api_response()
         validate_data = self.validate(response)
         logger.info('Данные прошли валидацию')
         return validate_data
 
     @staticmethod
-    def validate(api_response):
+    def validate(api_response) -> CityWeather:
         try:
             logger.info('Отправил данные на валидацию')
             return CityWeather(**api_response)
@@ -61,7 +65,8 @@ class Collector:
     def collect_weather_data(self) -> None:
         for city in self.get_cities():
             citydata = CityData(city)
-            self.weather_data_list.append(self.reformat_data(citydata.get_data()))
+            self.weather_data_list.append(
+                self.reformat_data(citydata.get_data()))
             logger.info(f'Добавил данные о городе {city} в список')
         self.insert_to_db()
 

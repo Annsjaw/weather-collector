@@ -14,29 +14,11 @@ from operations.models import weather
 from operations.schemas import CityWeather
 
 
-class WeatherData:
-
-    def __init__(self, api_response: json):
-        self.validate(api_response)
-        self.city = self.validate_data.name
-        self.temperature = self.validate_data.basic_parameters.temperature
-        self.humidity = self.validate_data.basic_parameters.humidity
-        self.wind_speed = self.validate_data.wind.speed
-
-    def validate(self, api_response):
-        try:
-            self.validate_data = CityWeather(**api_response)
-            logger.info('Валидация прошла успешно')
-        except ValidationError as e:
-            logger.error(f"Ошибка валидации данных: {e.json()}")
-
-
-class WeatherApi:
+class CityData:
 
     def __init__(self, city: str):
         self.city = city
-        self.url = f'{ENDPOINT}?q={city}&appid={settings.API_KEY}'
-        self.api_response = self.get_api_response()
+        self.url = f'{ENDPOINT}?q={self.city}&appid={settings.API_KEY}'
 
     def get_api_response(self) -> json:
         try:
@@ -55,17 +37,32 @@ class WeatherApi:
             message = api_response.json()
             raise exception.EndpointError(message)
 
+    def get_data(self):
+        response = self.get_api_response()
+        validate_data = self.validate(response)
+        logger.info('Данные прошли валидацию')
+        return validate_data
 
-class WeatherCollector:
+    @staticmethod
+    def validate(api_response):
+        try:
+            logger.info('Отправил данные на валидацию')
+            return CityWeather(**api_response)
+        except ValidationError as error:
+            logger.error(f"Ошибка валидации данных: {error.json()}")
+            raise error
+
+
+class Collector:
 
     def __init__(self):
         self.weather_data_list = []
 
     def collect_weather_data(self) -> None:
         for city in self.get_cities():
-            api_weather = WeatherApi(city)
-            weather_data = WeatherData(api_weather.api_response)
-            self.get_weather_data(weather_data)
+            citydata = CityData(city)
+            self.weather_data_list.append(self.reformat_data(citydata.get_data()))
+            logger.info(f'Добавил данные о городе {city} в список')
         self.insert_to_db()
 
     @staticmethod
@@ -82,19 +79,20 @@ class WeatherCollector:
                         f'{len(self.weather_data_list)} городах в базу')
             session.commit()
 
-    def get_weather_data(self, weather_data: WeatherData) -> None:
+    @staticmethod
+    def reformat_data(validate_data: CityWeather) -> dict:
         data = {
-            'city': weather_data.city,
-            'temperature': weather_data.temperature,
-            'humidity': weather_data.humidity,
-            'wind_speed': weather_data.wind_speed
+            'city': validate_data.name,
+            'temperature': validate_data.basic_parameters.temperature,
+            'humidity': validate_data.basic_parameters.humidity,
+            'wind_speed': validate_data.wind.speed
         }
-        self.weather_data_list.append(data)
-        logger.info(f'Добавил данные о городе {weather_data.city} в список')
+        logger.info('Преобразовал данные для вставки в БД')
+        return data
 
 
 def main():
-    collector = WeatherCollector()
+    collector = Collector()
     collector.collect_weather_data()
 
 
